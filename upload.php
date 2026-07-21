@@ -103,6 +103,7 @@ $columnMap = [
     'BUYER'                 => 'BUYER',
     'YARN_TYPE'             => 'YARN_TYPE',
     'YARN_COUNT'            => 'YARN_COUNT',
+    'MC_DIA'                => 'MC_DIA',
     'FINISH_DIA'            => 'FINISH_DIA',
     'FABRICS_TYPE'          => 'FABRICS_TYPE',
     'BOOKING'               => 'BOOKING',
@@ -120,6 +121,7 @@ $columnMap = [
     'KNIT_TNA_START'        => 'KNIT_TNA_START',
     'KNIT_TNA_END'          => 'KNIT_TNA_END',
     'LOT_NO'                => 'LOT_NO',
+    'SL_VDQ'                => 'SL_VDQ'
 ];
 
 /* ==========================
@@ -200,7 +202,7 @@ while (($row = fgetcsv($handle, 1000000, ",")) !== FALSE) {
     
     if ($stmt->execute()) {
         $success++;
-        echo "Row " . $rowNo . ": Knitting Input Inserted<br>";
+        echo "Row " . $rowNo . ": Knitting Program Inserted<br>";
     } else {
         $fail++;
         echo "<span style='color:red'>Row " . $rowNo . " Failed : " . $stmt->error . "</span><br>";

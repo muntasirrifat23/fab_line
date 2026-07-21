@@ -206,15 +206,6 @@
       border-radius: 40px;
       border: 1px solid #e0d4f0;
     }
-
-    /* Operator hint style */
-    .operator-hint {
-      font-size: 12px;
-      color: #7a6a9a;
-      text-align: center;
-      margin-top: 5px;
-      opacity: 0.7;
-    }
   </style>
 </head>
 
@@ -228,7 +219,7 @@
         <div class="col"><img src="image/fabline.jpg" alt="Proline Logo"></div>
         <div class="col">
           <div class="hide-md-lg"></div>
-          <input type="text" name="username" id="uname" placeholder="Username / Operator ID" required>
+          <input type="text" name="username" id="uname" placeholder="Username" required>
           <div style="position:relative;">
             <input type="password" name="password" id="upass" placeholder="Password" required>
           </div>
@@ -241,10 +232,7 @@
           </div>
           <input type="button" value="Login For Production Apps" onclick="login(1)">
           <input type="button" style="display: none;" value="Login For Graphically Apps" onclick="login(2)" class="w3-blue-grey">
-          <div class="operator-hint">
-            <i class="fas fa-info-circle"></i> Use OPERATOR_ID or regular username to login
-          </div>
-          <br>
+          <br><br>
           <input type="button" value="Change Password" onclick="toggleChangePwd()">
           <div id="changePwdBox" style="display:none;margin-top:12px;">
             <div style="position:relative;margin-top:8px;">
@@ -320,14 +308,8 @@
 
     function login(param) {
       saveCookie();
-      var txt1 = $('#uname').val().trim();
-      var txt2 = $('#upass').val().trim();
-      
-      if (!txt1 || !txt2) {
-        alert('Please enter username and password');
-        return;
-      }
-      
+      var txt1 = $('#uname').val();
+      var txt2 = $('#upass').val();
       $.ajax({
         type: 'POST',
         url: 'loginPOST.php',
@@ -337,14 +319,7 @@
           if (msgNew1 === 'OK') {
             if (param == 1) window.location.href = 'initialPage.php';
             else if (param == 2) window.location.href = 'http://proline.purbani.com/zPGReportAllWeb/webapp/index.html';
-          } else {
-            alert('Invalid username/password. Please try again.');
-            $('#upass').val('');
-            $('#upass').focus();
-          }
-        },
-        error: function() {
-          alert('Server error. Please try again.');
+          } else alert('username/password not correct');
         }
       });
     }
@@ -386,10 +361,6 @@
         alert('New password and confirmation do not match');
         return;
       }
-      if (newp.length < 4) {
-        alert('New password must be at least 4 characters long');
-        return;
-      }
 
       $.ajax({
         type: 'POST',
@@ -409,22 +380,7 @@
       });
     }
 
-    // Enter key support
-    $(document).ready(function() { 
-      loadCookie();
-      
-      $('#upass').keypress(function(e) {
-        if (e.which === 13) {
-          login(1);
-        }
-      });
-      
-      $('#uname').keypress(function(e) {
-        if (e.which === 13) {
-          $('#upass').focus();
-        }
-      });
-    });
+    $(document).ready(function() { loadCookie(); });
   </script>
 </body>
 
