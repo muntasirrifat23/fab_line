@@ -42,7 +42,11 @@ if (isset($_POST['knitting_input'])) {
 }
 if (isset($_POST['knitting_program'])) {
     $_SESSION['lineNo'] = $_POST['option'];
-    header('location:knitting_program.php');
+    header('location:knitting_program_list.php');
+    exit();
+}
+if (isset($_POST['knit_cards'])) {
+    header('location:knit_card_list.php');
     exit();
 }
 if (isset($_POST['knitting_store'])) {
@@ -56,7 +60,6 @@ if (isset($_POST['user_management'])) {
     exit();
 }
 if (isset($_POST['report'])) {
-    $_SESSION['lineNo'] = $_POST['option'];
     header('location:report.php');
     exit();
 }
@@ -103,18 +106,18 @@ mysqli_close($db);
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <style>
         :root {
-            --primary-1: #1e3a8a;
-            --primary-2: #2563eb;
-            --primary-3: #3b82f6;
-            --primary-gradient: linear-gradient(135deg, #1e3a8a, #2563eb, #60a5fa);
-            --accent: #f59e0b;
-            --accent-gradient: linear-gradient(135deg, #d97706, #f59e0b);
-            --muted: #f8fafc;
-            --card-bg: rgba(255, 255, 255, .97);
-            --shadow-sm: 0 4px 10px rgba(30, 58, 138, .08);
-            --shadow: 0 8px 24px rgba(30, 58, 138, .12);
-            --shadow-lg: 0 14px 36px rgba(30, 58, 138, .16);
-            --glass-border: 1px solid rgba(37, 99, 235, .15);
+            --primary-1: #00796b;
+            --primary-2: #26a69a;
+            --primary-gradient: linear-gradient(135deg, #00796b, #26a69a, #4db6ac);
+            --accent: #ff6f60;
+            --accent-gradient: linear-gradient(135deg, #e53935, #ff6f60);
+            --muted: #f5f5f5;
+            --card-bg: rgba(255, 255, 255, 0.92);
+            --shadow-sm: 0 4px 12px rgba(0, 0, 0, 0.05);
+            --shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+            --shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.12);
+            --bg-gradient: radial-gradient(circle at 10% 30%, #e0f2f1, #e8f5e9, #fff3e0);
+            --glass-border: 1px solid rgba(255, 255, 255, 0.3);
         }
 
         * {
@@ -122,7 +125,7 @@ mysqli_close($db);
         }
 
         body {
-            background: linear-gradient(135deg, #f8fafc, #eef4ff, #f5f9ff);
+            background: linear-gradient(145deg, #dceaf5 0%, #e9f2f9 100%);
             font-family: 'Poppins', 'Segoe UI', system-ui, 'Inter', -apple-system, BlinkMacSystemFont, 'Roboto', sans-serif;
             position: relative;
             min-height: 100vh;
@@ -160,7 +163,7 @@ mysqli_close($db);
         }
 
         .page-header {
-            background: linear-gradient(135deg, #1e3a8a, #2563eb, #3b82f6);
+            background: linear-gradient(105deg, #004d40, #00796b, #00897b);
             color: white;
             padding: 20px 24px;
             border-radius: 32px;
@@ -205,8 +208,7 @@ mysqli_close($db);
         }
 
         .glass-panel {
-            background: #ffffff;
-            border: 1px solid #dbeafe;
+            background: var(--card-bg);
             backdrop-filter: blur(2px);
             border-radius: 36px;
             padding: 24px 28px;
@@ -234,7 +236,7 @@ mysqli_close($db);
             left: 16px;
             top: 50%;
             transform: translateY(-50%);
-            color: #2563eb;
+            color: #00796b;
             z-index: 1;
             pointer-events: none;
         }
@@ -253,8 +255,8 @@ mysqli_close($db);
         }
 
         select.w3-select:focus {
-            border-color: #2563eb;
-            box-shadow: 0 0 0 4px rgba(37, 99, 235, .15);
+            border-color: var(--primary-1);
+            box-shadow: 0 0 0 3px rgba(0, 121, 107, 0.2);
             outline: none;
         }
 
@@ -284,27 +286,27 @@ mysqli_close($db);
         }
 
         .btn-grid .w3-button:hover {
-            transform: translateY(-4px) scale(1.02);
+            transform: translateY(-5px);
             box-shadow: var(--shadow);
             background-position: right center;
         }
 
         .w3-teal {
-            background: linear-gradient(135deg, #2563eb, #3b82f6);
+            background: linear-gradient(95deg, #00796b, #26a69a, #4db6ac);
             color: white;
         }
 
         .w3-teal:hover {
-            background: linear-gradient(135deg, #1d4ed8, #2563eb);
+            background: linear-gradient(95deg, #00695c, #1e88a0, #3d9b91);
         }
 
         .w3-black {
-            background: linear-gradient(135deg, #374151, #111827);
+            background: linear-gradient(95deg, #2c2c2c, #4a4a4a, #6c6c6c);
             color: white;
         }
 
         .w3-black:hover {
-            background: linear-gradient(135deg, #1f2937, #111827);
+            background: linear-gradient(95deg, #1f1f1f, #3a3a3a, #5a5a5a);
         }
 
         .w3-modal .w3-modal-content {
@@ -312,13 +314,13 @@ mysqli_close($db);
             background: rgba(255, 255, 255, 0.97);
             backdrop-filter: blur(8px);
             box-shadow: var(--shadow-lg);
-            border: 1px solid rgba(37, 99, 235, 0.3);
+            border: 1px solid rgba(0, 121, 107, 0.3);
         }
 
         #lineSelectionModal input[type="checkbox"] {
             transform: scale(1.1);
             margin-right: 10px;
-            accent-color: #2563eb;
+            accent-color: #00796b;
         }
 
         #pageFooter {
@@ -326,7 +328,7 @@ mysqli_close($db);
             left: 0;
             right: 0;
             bottom: 0;
-            background: linear-gradient(135deg, #1e293b, #334155);
+            background: linear-gradient(95deg, #2c3e4e, #1e2f3a, #2c3e4e);
             color: #fff;
             padding: 12px 0;
             backdrop-filter: blur(6px);
@@ -408,11 +410,12 @@ mysqli_close($db);
                 </div> -->
 
                 <div class="btn-grid">
-                    <!-- <button class="w3-button w3-teal" name="knitting_input" id="knitting_input"><i class="fas fa-sign-in-alt"></i> KNITTING INPUT</button> -->
-                    <button class="w3-button w3-teal" name="knitting_program" id="knitting_program"><i class="fas fa-tshirt"></i> KNITTING PROGRAM</button>
-                    <button class="w3-button w3-teal" name="knitting_store" id="knitting_store"><i class="fas fa-tshirt"></i> KNITTING STORE</button>
-                    <button class="w3-button w3-teal" name="user_management" id="user_management"><i class="fas fa-user-plus"></i>USER MANAGEMENT</button>
-                    <button class="w3-button w3-teal" name="report" id="report"><i class="fas fa-file-alt"></i> REPORT</button>
+                    <button class="w3-button w3-teal" name="knitting_input" id="knitting_input"><i class="fas fa-sign-in-alt"></i> Knitting Input</button>
+                    <button class="w3-button w3-teal" name="knitting_program" id="knitting_program"><i class="fas fa-tshirt"></i> Knitting Program</button>
+                    <button class="w3-button w3-teal" name="knit_cards" id="knit_cards"><i class="fas fa-id-card"></i> Knit Cards</button>
+                    <button class="w3-button w3-teal" name="knitting_store" id="knitting_store"><i class="fas fa-warehouse"></i> Knitting Store</button>
+                    <button class="w3-button w3-teal" name="user_management" id="user_management"><i class="fas fa-user-plus"></i> User Management</button>
+                    <button class="w3-button w3-teal" name="report" id="report"><i class="fas fa-file-alt"></i> Report</button>
                 </div>
 
                 <div class="btn-grid">
@@ -533,27 +536,27 @@ mysqli_close($db);
 
             if (urTYP === "qms01") {
                 $("#idBTS, #idBTF, #idBTP, #idChange, #idAdjust, #idExcel, #uploadCSV, #ztarget").hide();
-                idFLR.style.display = "none";
+                if (idFLR) idFLR.style.display = "none";
             }
 
             if (!isNaN(urTYP) && Number(urTYP) >= 1 && Number(urTYP) <= 52) {
                 $("#idBTF, #idBTP, #idChange, #idAdjust, #idExcel, #uploadCSV, #user_management").hide();
-                idFLR.style.display = "none";
+                if (idFLR) idFLR.style.display = "none";
             }
 
             if (!isNaN(urTYP) && Number(urTYP) >= 101 && Number(urTYP) <= 999) {
                 $("#idBTS, #idBTP, #idChange, #idAdjust, #idExcel, #uploadCSV").hide();
-                idFLR.style.display = "none";
+                if (idFLR) idFLR.style.display = "none";
             }
 
             if ((!isNaN(urTYP) && Number(urTYP) >= 1001) || urTYP === "f1" || urTYP === "f2" || urTYP === "f3" || urTYP === "f4") {
                 $("#idBTS, #idBTF, #idChange, #idAdjust, #idExcel, #uploadCSV").hide();
-                idLNE.style.display = "none";
+                if (idLNE) idLNE.style.display = "none";
             }
 
             if (urTYP === "ppq29" || urTYP === "ppl04" || urTYP === "ppq28") {
                 $("#idBTF, #idBTS, #idBTP, #idChange, #idAdjust, #idExcel, #uploadCSV").hide();
-                idFLR.style.display = "none";
+                if (idFLR) idFLR.style.display = "none";
             }
 
             if (urTYP === "ppq71") {
@@ -564,7 +567,7 @@ mysqli_close($db);
             }
 
             if (urTYP === "ppq30" || urTYP === "ppq34" || urTYP === "ppq70" || urTYP === "ppq57" || urTYP === "ppl04" || urTYP === "admin" || urTYP === "abuhena" || urTYP === "test") {
-                $("#idExcel, #uploadCSV, #user_management, #usersBtn, #updateUserBtn, #report").show();
+                $("#idExcel, #uploadCSV, #user_management, #usersBtn, #updateUserBtn").show();
             } else {
                 $("#usersBtn, #updateUserBtn").hide();
             }
