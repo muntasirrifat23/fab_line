@@ -1,185 +1,169 @@
 <?php
 session_start();
-include 'config.php';
+require_once 'config.php';
 
 if (!isset($_SESSION['username'])) {
-    echo "<script>alert('You must be logged in'); window.location.href='login.php';</script>";
+    header("Location: login.php");
     exit();
 }
 
-$errors = array();
+$errors = [];
 $edit_id = isset($_GET['id']) ? intval($_GET['id']) : 0;
 $is_edit = ($edit_id > 0);
 
-// Default values
-$program_date = date('Y-m-d');
-$mc_no = '';
-$mc_dia = '';
-$mc_gauge = '';
-$finish_dia = '';
-$open_tube = 'O';
+// Pre-fetch Machine List from `mcno` table
+$mcno_list = [];
+$mcno_res = mysqli_query($db, "SELECT MCNOID, MCNO FROM mcno ORDER BY MCNO ASC");
+if ($mcno_res) {
+    while ($row = mysqli_fetch_assoc($mcno_res)) {
+        $mcno_list[] = $row;
+    }
+}
+
+// Pre-fetch Operator List from `knitting_operator` table
+$operator_list = [];
+$op_res = mysqli_query($db, "SELECT KOTID, OPERATOR_ID, OPERATOR_NAME FROM knitting_operator ORDER BY OPERATOR_NAME ASC");
+if ($op_res) {
+    while ($row = mysqli_fetch_assoc($op_res)) {
+        $operator_list[] = $row;
+    }
+}
+
+// Default field values using uppercase database column names
+$main_tid = '';
+$sub_tid = '';
+$booking = '';
+$sono = '';
+$style = '';
 $buyer = '';
 $supplier = '';
-$booking_no = '';
-$style_no = '';
-$so_no = '';
-$so_item = '';
-$shipment_date = '';
-$tna_start = '';
-$tna_end = '';
+$knit_m_description = '';
+$mcno = '';
+$qty = '0.00';
+$shift = 'A-SHIFT';
 $yarn_type = '';
 $yarn_count = '';
-$lot_no = '';
 $fabrics_type = '';
-$grey_gsm = '';
 $finish_gsm = '';
-$sl_vdq = '0.00';
-$colour = '';
-$req_qty = '0.000';
-$previous_knit = '0.000';
-$a_shift = '0';
-$b_shift = '0';
-$c_shift = '0';
-$total = '0';
-$balance = '0.000';
-$remarks = '';
+$finish_dia = '';
+$open_tube = 'O';
+$lot_no = '';
+$knit_material_code = '';
+$operator_id = '';
 
-// Load data if editing
+// Load existing record for editing
 if ($is_edit) {
-    $stmt = $db->prepare("SELECT * FROM knitting_program WHERE id = ?");
+    $stmt = $db->prepare("SELECT * FROM knitting_program WHERE KPTID = ?");
     $stmt->bind_param("i", $edit_id);
     $stmt->execute();
     $res = $stmt->get_result();
     if ($res && $res->num_rows == 1) {
         $row = $res->fetch_assoc();
-        $program_date = $row['program_date'];
-        $mc_no = $row['mc_no'];
-        $mc_dia = $row['mc_dia'];
-        $mc_gauge = $row['mc_gauge'];
-        $finish_dia = $row['finish_dia'];
-        $open_tube = $row['open_tube'];
-        $buyer = $row['buyer'];
-        $supplier = $row['supplier'];
-        $booking_no = $row['booking_no'];
-        $style_no = $row['style_no'];
-        $so_no = $row['so_no'];
-        $so_item = $row['so_item'];
-        $shipment_date = $row['shipment_date'];
-        $tna_start = $row['tna_start'];
-        $tna_end = $row['tna_end'];
-        $yarn_type = $row['yarn_type'];
-        $yarn_count = $row['yarn_count'];
-        $lot_no = $row['lot_no'];
-        $fabrics_type = $row['fabrics_type'];
-        $grey_gsm = $row['grey_gsm'];
-        $finish_gsm = $row['finish_gsm'];
-        $sl_vdq = $row['sl_vdq'];
-        $colour = $row['colour'];
-        $req_qty = $row['req_qty'];
-        $previous_knit = $row['previous_knit'];
-        $a_shift = $row['a_shift'];
-        $b_shift = $row['b_shift'];
-        $c_shift = $row['c_shift'];
-        $total = $row['total'];
-        $balance = $row['balance'];
-        $remarks = $row['remarks'];
+        $main_tid = $row['MAIN_TID'] ?? '';
+        $sub_tid = $row['SUB_TID'] ?? '';
+        $booking = $row['BOOKING'] ?? '';
+        $sono = $row['SONO'] ?? '';
+        $style = $row['STYLE'] ?? '';
+        $buyer = $row['BUYER'] ?? '';
+        $supplier = $row['SUPPLIER'] ?? '';
+        $knit_m_description = $row['KNIT_M_DESCRIPTION'] ?? '';
+        $mcno = $row['MCNO'] ?? '';
+        $qty = $row['QTY'] ?? '0.00';
+        $shift = $row['SHIFT'] ?? 'A-SHIFT';
+        $yarn_type = $row['YARN_TYPE'] ?? '';
+        $yarn_count = $row['YARN_COUNT'] ?? '';
+        $fabrics_type = $row['FABRICS_TYPE'] ?? '';
+        $finish_gsm = $row['FINISH_GSM'] ?? '';
+        $finish_dia = $row['FINISH_DIA'] ?? '';
+        $open_tube = $row['OPEN_TUBE'] ?? 'O';
+        $lot_no = $row['LOT_NO'] ?? '';
+        $knit_material_code = $row['KNIT_MATERIAL_CODE'] ?? '';
     } else {
-        header("Location: knitting_program_list.php?error=Record not found");
+        header("Location: knitting_program_list.php?error=Program+not+found");
         exit();
     }
 }
 
-// Process POST submission
-if ($_SERVER["REQUEST_METHOD"] == "POST") {
-    $program_date = trim($_POST['program_date']);
-    $mc_no = trim($_POST['mc_no']);
-    $mc_dia = trim($_POST['mc_dia']);
-    $mc_gauge = trim($_POST['mc_gauge']);
-    $finish_dia = trim($_POST['finish_dia']);
-    $open_tube = trim($_POST['open_tube']);
-    $buyer = trim($_POST['buyer']);
-    $supplier = trim($_POST['supplier']);
-    $booking_no = trim($_POST['booking_no']);
-    $style_no = trim($_POST['style_no']);
-    $so_no = trim($_POST['so_no']);
-    $so_item = trim($_POST['so_item']);
-    $shipment_date = !empty($_POST['shipment_date']) ? $_POST['shipment_date'] : NULL;
-    $tna_start = !empty($_POST['tna_start']) ? $_POST['tna_start'] : NULL;
-    $tna_end = !empty($_POST['tna_end']) ? $_POST['tna_end'] : NULL;
-    $yarn_type = trim($_POST['yarn_type']);
-    $yarn_count = trim($_POST['yarn_count']);
-    $lot_no = trim($_POST['lot_no']);
-    $fabrics_type = trim($_POST['fabrics_type']);
-    $grey_gsm = trim($_POST['grey_gsm']);
-    $finish_gsm = trim($_POST['finish_gsm']);
-    $sl_vdq = floatval($_POST['sl_vdq']);
-    $colour = trim($_POST['colour']);
-    $req_qty = floatval($_POST['req_qty']);
-    $previous_knit = floatval($_POST['previous_knit']);
-    $a_shift = intval($_POST['a_shift']);
-    $b_shift = intval($_POST['b_shift']);
-    $c_shift = intval($_POST['c_shift']);
+// Form Submission Handler
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    $booking = trim($_POST['BOOKING'] ?? '');
+    $sono = trim($_POST['SONO'] ?? '');
+    $style = trim($_POST['STYLE'] ?? '');
+    $buyer = trim($_POST['BUYER'] ?? '');
+    $supplier = trim($_POST['SUPPLIER'] ?? '');
+    $knit_m_description = trim($_POST['KNIT_M_DESCRIPTION'] ?? '');
+    $mcno = trim($_POST['MCNO'] ?? '');
+    $qty = floatval($_POST['QTY'] ?? 0);
+    $shift = trim($_POST['SHIFT'] ?? 'A-SHIFT');
+    $yarn_type = trim($_POST['YARN_TYPE'] ?? '');
+    $yarn_count = trim($_POST['YARN_COUNT'] ?? '');
+    $fabrics_type = trim($_POST['FABRICS_TYPE'] ?? '');
+    $finish_gsm = trim($_POST['FINISH_GSM'] ?? '');
+    $finish_dia = trim($_POST['FINISH_DIA'] ?? '');
+    $open_tube = trim($_POST['OPEN_TUBE'] ?? 'O');
+    $lot_no = trim($_POST['LOT_NO'] ?? '');
+    $knit_material_code = trim($_POST['KNIT_MATERIAL_CODE'] ?? '');
+    $operator_id = trim($_POST['OPERATOR_ID'] ?? '');
+    $main_tid = trim($_POST['MAIN_TID'] ?? '');
+    $sub_tid = trim($_POST['SUB_TID'] ?? '');
 
-    // Server-side calculation of Total Target and Balance
-    $total = $a_shift + $b_shift + $c_shift;
-    $balance = $req_qty - $previous_knit - $total;
-    if ($balance < 0) $balance = 0;
-
-    $remarks = trim($_POST['remarks']);
+    // Auto-generate MAIN_TID & SUB_TID if empty
+    if (empty($main_tid)) {
+        $main_tid = time();
+    }
+    if (empty($sub_tid)) {
+        $sub_tid = time() . rand(10, 99);
+    }
 
     // Validation
-    if (empty($program_date)) {
-        $errors[] = "Program Date is required.";
+    if (empty($booking)) {
+        $errors[] = "BOOKING number is required.";
     }
-    if (empty($mc_no)) {
-        $errors[] = "Machine No (M/C No) is required.";
+    if (empty($mcno)) {
+        $errors[] = "Machine No (MCNO) is required.";
     }
-    if ($req_qty < 0 || $previous_knit < 0 || $sl_vdq < 0 || $a_shift < 0 || $b_shift < 0 || $c_shift < 0) {
-        $errors[] = "Numeric fields cannot be negative values.";
+    if ($qty <= 0) {
+        $errors[] = "QTY must be greater than 0.";
     }
 
     if (empty($errors)) {
         if ($is_edit) {
             $sql = "UPDATE knitting_program SET 
-                program_date=?, mc_no=?, mc_dia=?, mc_gauge=?, finish_dia=?, open_tube=?, buyer=?, supplier=?, 
-                booking_no=?, style_no=?, so_no=?, so_item=?, shipment_date=?, tna_start=?, tna_end=?, yarn_type=?, 
-                yarn_count=?, lot_no=?, fabrics_type=?, grey_gsm=?, finish_gsm=?, sl_vdq=?, colour=?, req_qty=?, 
-                previous_knit=?, a_shift=?, b_shift=?, c_shift=?, total=?, balance=?, remarks=? 
-                WHERE id=?";
+                MAIN_TID=?, SUB_TID=?, BOOKING=?, SONO=?, STYLE=?, BUYER=?, SUPPLIER=?, 
+                KNIT_M_DESCRIPTION=?, MCNO=?, QTY=?, SHIFT=?, YARN_TYPE=?, YARN_COUNT=?, 
+                FABRICS_TYPE=?, FINISH_GSM=?, FINISH_DIA=?, OPEN_TUBE=?, LOT_NO=?, KNIT_MATERIAL_CODE=? 
+                WHERE KPTID=?";
             $stmt = $db->prepare($sql);
             $stmt->bind_param(
-                "sssssssssssssssssssssdsddiiiidsi",
-                $program_date, $mc_no, $mc_dia, $mc_gauge, $finish_dia, $open_tube, $buyer, $supplier,
-                $booking_no, $style_no, $so_no, $so_item, $shipment_date, $tna_start, $tna_end, $yarn_type,
-                $yarn_count, $lot_no, $fabrics_type, $grey_gsm, $finish_gsm, $sl_vdq, $colour, $req_qty,
-                $previous_knit, $a_shift, $b_shift, $c_shift, $total, $balance, $remarks, $edit_id
+                "sssssssssdsssssssssi",
+                $main_tid, $sub_tid, $booking, $sono, $style, $buyer, $supplier,
+                $knit_m_description, $mcno, $qty, $shift, $yarn_type, $yarn_count,
+                $fabrics_type, $finish_gsm, $finish_dia, $open_tube, $lot_no, $knit_material_code, $edit_id
             );
             if ($stmt->execute()) {
-                header("Location: knitting_program_list.php?msg=Program updated successfully!");
+                header("Location: knitting_program_list.php?msg=Program+updated+successfully");
                 exit();
             } else {
                 $errors[] = "Database update error: " . $db->error;
             }
         } else {
             $sql = "INSERT INTO knitting_program (
-                program_date, mc_no, mc_dia, mc_gauge, finish_dia, open_tube, buyer, supplier, 
-                booking_no, style_no, so_no, so_item, shipment_date, tna_start, tna_end, yarn_type, 
-                yarn_count, lot_no, fabrics_type, grey_gsm, finish_gsm, sl_vdq, colour, req_qty, 
-                previous_knit, a_shift, b_shift, c_shift, total, balance, remarks
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
+                MAIN_TID, SUB_TID, BOOKING, SONO, STYLE, BUYER, SUPPLIER, 
+                KNIT_M_DESCRIPTION, MCNO, QTY, SHIFT, YARN_TYPE, YARN_COUNT, 
+                FABRICS_TYPE, FINISH_GSM, FINISH_DIA, OPEN_TUBE, LOT_NO, KNIT_MATERIAL_CODE
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)";
             $stmt = $db->prepare($sql);
             $stmt->bind_param(
-                "sssssssssssssssssssssdsddiiiids",
-                $program_date, $mc_no, $mc_dia, $mc_gauge, $finish_dia, $open_tube, $buyer, $supplier,
-                $booking_no, $style_no, $so_no, $so_item, $shipment_date, $tna_start, $tna_end, $yarn_type,
-                $yarn_count, $lot_no, $fabrics_type, $grey_gsm, $finish_gsm, $sl_vdq, $colour, $req_qty,
-                $previous_knit, $a_shift, $b_shift, $c_shift, $total, $balance, $remarks
+                "sssssssssdsssssssss",
+                $main_tid, $sub_tid, $booking, $sono, $style, $buyer, $supplier,
+                $knit_m_description, $mcno, $qty, $shift, $yarn_type, $yarn_count,
+                $fabrics_type, $finish_gsm, $finish_dia, $open_tube, $lot_no, $knit_material_code
             );
             if ($stmt->execute()) {
-                header("Location: knitting_program_list.php?msg=New Knitting Program added successfully!");
+                header("Location: knitting_program_list.php?msg=New+program+added+successfully");
                 exit();
             } else {
-                $errors[] = "Database insert error: " . $db->error;
+                $errors[] = "Database insertion error: " . $db->error;
             }
         }
     }
@@ -205,17 +189,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             --card-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
         }
 
-        /* Fix mycss.css FontAwesome icon border bug */
-        i, i.fa-solid, i.fas, i.far, i.fab, i.fa-regular {
-            border: none !important;
-            outline: none !important;
-            box-shadow: none !important;
-            padding: 0 !important;
-            margin: 0 !important;
-            display: inline-block !important;
-            transform: none !important;
-        }
-
         body {
             padding: 24px;
             background-color: var(--surface-bg);
@@ -223,11 +196,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             color: #334155;
         }
 
-        /* Top Banner Header */
         .top-banner {
             background: linear-gradient(135deg, #004d40 0%, #00796b 50%, #00897b 100%);
             color: white;
-            padding: 26px 32px;
+            padding: 24px 32px;
             border-radius: 16px;
             box-shadow: 0 10px 25px rgba(0, 121, 107, 0.2);
             margin-bottom: 28px;
@@ -239,22 +211,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             margin: 0;
         }
 
-        .nav-btn {
-            border-radius: 10px;
-            font-weight: 600;
-            padding: 10px 20px;
-            transition: all 0.2s ease;
-        }
-
-        .nav-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-        }
-
         .content-panel {
             background: #ffffff;
             border-radius: 16px;
-            padding: 36px 40px;
+            padding: 32px 36px;
             box-shadow: var(--card-shadow);
             border: 1px solid #e2e8f0;
             margin-bottom: 28px;
@@ -268,7 +228,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             border-bottom: 2px solid #e0f2f1;
             padding-bottom: 10px;
             margin-bottom: 24px;
-            margin-top: 32px;
+            margin-top: 28px;
             display: flex;
             align-items: center;
             gap: 10px;
@@ -279,7 +239,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             margin-top: 10px;
         }
 
-        /* Strict Label & Form Field Layout - Label Always On Top */
         .content-panel .form-label {
             display: block !important;
             width: 100% !important;
@@ -299,37 +258,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
             font-size: 14px;
         }
 
-        .form-control:focus, .form-select:focus {
-            border-color: var(--primary-teal);
-            box-shadow: 0 0 0 3px rgba(0, 121, 107, 0.15);
-        }
-
-        .form-control[readonly] {
-            background-color: #f1f5f9;
-            color: #475569;
-            font-weight: 700;
-            cursor: not-allowed;
-        }
-
-        .read-only-highlight {
-            background-color: #e0f2f1 !important;
-            color: #004d40 !important;
-            border-color: #b2dfdb !important;
-        }
-
-        /* Strict 24px Row-to-Row Vertical Gap for Every Grid Column Across All Sections */
         .content-panel .row > [class*="col-"] {
-            margin-bottom: 24px !important;
-        }
-
-        /* Clean up HTML5 number input steppers */
-        input[type=number]::-webkit-inner-spin-button,
-        input[type=number]::-webkit-outer-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-        input[type=number] {
-            -moz-appearance: textfield;
+            margin-bottom: 20px !important;
         }
 
         .btn-teal {
@@ -359,7 +289,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     <i class="fa-solid <?php echo $is_edit ? 'fa-pen-to-square' : 'fa-plus-circle'; ?>"></i>
                     <?php echo $is_edit ? 'Edit Knitting Program #' . $edit_id : 'New Knitting Program Entry'; ?>
                 </h1>
-                <p class="mb-0 text-white-50 small mt-1">Fill in the production parameters below to save or update the program entry</p>
+                <p class="mb-0 text-white-50 small mt-1">Populate parameters based on Rifat's database structure</p>
             </div>
             <div>
                 <a href="knitting_program_list.php" class="btn btn-light nav-btn text-dark">
@@ -383,164 +313,137 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         <div class="content-panel">
             <form method="POST" id="programForm" action="knitting_program_form.php<?php echo $is_edit ? '?id=' . $edit_id : ''; ?>">
 
-                <!-- SECTION 1: General & Machine Specifications -->
+                <!-- SECTION 1: Booking Lookup & Machine Selection -->
                 <div class="form-section-title">
-                    <i class="fa-solid fa-gears"></i> 1. General & Machine Specifications
+                    <i class="fa-solid fa-gears"></i> 1. Booking Lookup & Machine Selection
+                </div>
+                <div class="row gx-4 mb-2">
+                    <div class="col-md-4">
+                        <label class="form-label">BOOKING No <span class="text-danger">*</span></label>
+                        <div class="input-group">
+                            <input type="text" name="BOOKING" id="bookingInput" class="form-control" placeholder="Enter BOOKING (e.g. 230043287)" value="<?php echo htmlspecialchars($booking); ?>" required>
+                            <button type="button" class="btn btn-primary" id="fetchBookingBtn">
+                                <i class="fa-solid fa-magnifying-glass me-1"></i> Lookup
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Machine No (MCNO) <span class="text-danger">*</span></label>
+                        <select name="MCNO" id="mcnoSelect" class="form-select" required>
+                            <option value="">-- Select Machine (from `mcno` table) --</option>
+                            <?php foreach ($mcno_list as $m): ?>
+                                <option value="<?php echo htmlspecialchars($m['MCNO']); ?>" <?php echo ($mcno == $m['MCNO']) ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($m['MCNO']); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">Shift Selection</label>
+                        <select name="SHIFT" class="form-select">
+                            <option value="A-SHIFT" <?php echo ($shift == 'A-SHIFT') ? 'selected' : ''; ?>>A-SHIFT</option>
+                            <option value="B-SHIFT" <?php echo ($shift == 'B-SHIFT') ? 'selected' : ''; ?>>B-SHIFT</option>
+                            <option value="C-SHIFT" <?php echo ($shift == 'C-SHIFT') ? 'selected' : ''; ?>>C-SHIFT</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- SECTION 2: Order & Description Details -->
+                <div class="form-section-title">
+                    <i class="fa-solid fa-file-invoice"></i> 2. Order & Description Details
+                </div>
+                <div class="row gx-4 mb-2">
+                    <div class="col-md-4">
+                        <label class="form-label">SONO</label>
+                        <input type="text" name="SONO" id="sonoInput" class="form-control" placeholder="SONO" value="<?php echo htmlspecialchars($sono); ?>">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">STYLE</label>
+                        <input type="text" name="STYLE" id="styleInput" class="form-control" placeholder="STYLE" value="<?php echo htmlspecialchars($style); ?>">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">BUYER</label>
+                        <input type="text" name="BUYER" id="buyerInput" class="form-control" placeholder="BUYER" value="<?php echo htmlspecialchars($buyer); ?>">
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label">SUPPLIER</label>
+                        <input type="text" name="SUPPLIER" id="supplierInput" class="form-control" placeholder="SUPPLIER" value="<?php echo htmlspecialchars($supplier); ?>">
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label">KNIT_M_DESCRIPTION</label>
+                        <select name="KNIT_M_DESCRIPTION" id="descSelect" class="form-select">
+                            <option value="<?php echo htmlspecialchars($knit_m_description); ?>">
+                                <?php echo htmlspecialchars($knit_m_description ?: '-- Select Fabric Description --'); ?>
+                            </option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- SECTION 3: Technical Specifications -->
+                <div class="form-section-title">
+                    <i class="fa-solid fa-scroll"></i> 3. Technical Specifications
                 </div>
                 <div class="row gx-4 mb-2">
                     <div class="col-md-3">
-                        <label class="form-label">Program Date <span class="text-danger">*</span></label>
-                        <input type="date" name="program_date" class="form-control" value="<?php echo htmlspecialchars($program_date); ?>" required>
+                        <label class="form-label">YARN_TYPE</label>
+                        <input type="text" name="YARN_TYPE" id="yarnTypeInput" class="form-control" value="<?php echo htmlspecialchars($yarn_type); ?>">
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Machine No (M/C No) <span class="text-danger">*</span></label>
-                        <input type="text" name="mc_no" class="form-control" placeholder="e.g. 87" value="<?php echo htmlspecialchars($mc_no); ?>" required>
+                        <label class="form-label">YARN_COUNT</label>
+                        <input type="text" name="YARN_COUNT" id="yarnCountInput" class="form-control" value="<?php echo htmlspecialchars($yarn_count); ?>">
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">M/C Dia</label>
-                        <input type="text" name="mc_dia" class="form-control" placeholder="e.g. 34X24" value="<?php echo htmlspecialchars($mc_dia); ?>">
+                        <label class="form-label">FABRICS_TYPE</label>
+                        <input type="text" name="FABRICS_TYPE" id="fabricsTypeInput" class="form-control" value="<?php echo htmlspecialchars($fabrics_type); ?>">
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">M/C Gauge</label>
-                        <input type="text" name="mc_gauge" class="form-control" placeholder="e.g. 28" value="<?php echo htmlspecialchars($mc_gauge); ?>">
-                    </div>
-
-                    <div class="col-md-3">
-                        <label class="form-label">Finish Dia</label>
-                        <input type="text" name="finish_dia" class="form-control" placeholder="e.g. 68" value="<?php echo htmlspecialchars($finish_dia); ?>">
+                        <label class="form-label">FINISH_GSM</label>
+                        <input type="text" name="FINISH_GSM" id="finishGsmInput" class="form-control" value="<?php echo htmlspecialchars($finish_gsm); ?>">
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Open / Tube</label>
-                        <select name="open_tube" class="form-select">
+                        <label class="form-label">FINISH_DIA</label>
+                        <input type="text" name="FINISH_DIA" id="finishDiaInput" class="form-control" value="<?php echo htmlspecialchars($finish_dia); ?>">
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">OPEN_TUBE</label>
+                        <select name="OPEN_TUBE" id="openTubeSelect" class="form-select">
                             <option value="O" <?php echo ($open_tube == 'O') ? 'selected' : ''; ?>>Open (O)</option>
                             <option value="T" <?php echo ($open_tube == 'T') ? 'selected' : ''; ?>>Tube (T)</option>
                         </select>
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Grey GSM</label>
-                        <input type="text" name="grey_gsm" class="form-control" placeholder="e.g. 160" value="<?php echo htmlspecialchars($grey_gsm); ?>">
+                        <label class="form-label">LOT_NO</label>
+                        <input type="text" name="LOT_NO" id="lotNoInput" class="form-control" value="<?php echo htmlspecialchars($lot_no); ?>">
                     </div>
                     <div class="col-md-3">
-                        <label class="form-label">Finish GSM</label>
-                        <input type="text" name="finish_gsm" class="form-control" placeholder="e.g. 150" value="<?php echo htmlspecialchars($finish_gsm); ?>">
+                        <label class="form-label">KNIT_MATERIAL_CODE</label>
+                        <input type="text" name="KNIT_MATERIAL_CODE" id="knitMaterialCodeInput" class="form-control" value="<?php echo htmlspecialchars($knit_material_code); ?>">
                     </div>
                 </div>
 
-                <!-- SECTION 2: Buyer & Order Details -->
+                <!-- SECTION 4: Production Operator & Program Quantity -->
                 <div class="form-section-title">
-                    <i class="fa-solid fa-file-invoice"></i> 2. Buyer & Order Details
+                    <i class="fa-solid fa-weight-hanging"></i> 4. Production Operator & Program Quantity
                 </div>
                 <div class="row gx-4 mb-2">
                     <div class="col-md-4">
-                        <label class="form-label">Buyer Name</label>
-                        <input type="text" name="buyer" class="form-control" placeholder="e.g. HEMA" value="<?php echo htmlspecialchars($buyer); ?>">
+                        <label class="form-label">Operator (from `knitting_operator` table)</label>
+                        <select name="OPERATOR_ID" class="form-select">
+                            <option value="">-- Select Operator --</option>
+                            <?php foreach ($operator_list as $op): ?>
+                                <option value="<?php echo htmlspecialchars($op['OPERATOR_ID']); ?>" <?php echo ($operator_id == $op['OPERATOR_ID']) ? 'selected' : ''; ?>>
+                                    <?php echo htmlspecialchars($op['OPERATOR_NAME'] . ' (' . $op['OPERATOR_ID'] . ')'); ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label">Supplier Name</label>
-                        <input type="text" name="supplier" class="form-control" placeholder="e.g. KARIM" value="<?php echo htmlspecialchars($supplier); ?>">
+                        <label class="form-label">Program QTY (KG) <span class="text-danger">*</span></label>
+                        <input type="number" step="0.01" min="0.01" name="QTY" class="form-control fw-bold text-success" placeholder="0.00" value="<?php echo htmlspecialchars($qty); ?>" required>
                     </div>
                     <div class="col-md-4">
-                        <label class="form-label">Booking No</label>
-                        <input type="text" name="booking_no" class="form-control" placeholder="e.g. 230043287" value="<?php echo htmlspecialchars($booking_no); ?>">
-                    </div>
-
-                    <div class="col-md-4">
-                        <label class="form-label">Style No</label>
-                        <input type="text" name="style_no" class="form-control" placeholder="e.g. 236860" value="<?php echo htmlspecialchars($style_no); ?>">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">SO No</label>
-                        <input type="text" name="so_no" class="form-control" placeholder="SO Number" value="<?php echo htmlspecialchars($so_no); ?>">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">SO Item</label>
-                        <input type="text" name="so_item" class="form-control" placeholder="Item No" value="<?php echo htmlspecialchars($so_item); ?>">
-                    </div>
-
-                    <div class="col-md-4">
-                        <label class="form-label">TNA Start Date</label>
-                        <input type="date" name="tna_start" class="form-control" value="<?php echo htmlspecialchars($tna_start); ?>">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">TNA End Date</label>
-                        <input type="date" name="tna_end" class="form-control" value="<?php echo htmlspecialchars($tna_end); ?>">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Shipment Date</label>
-                        <input type="date" name="shipment_date" class="form-control" value="<?php echo htmlspecialchars($shipment_date); ?>">
-                    </div>
-                </div>
-
-                <!-- SECTION 3: Fabric & Yarn Specifications -->
-                <div class="form-section-title">
-                    <i class="fa-solid fa-scroll"></i> 3. Fabric & Yarn Specifications
-                </div>
-                <div class="row gx-4 mb-2">
-                    <div class="col-md-4">
-                        <label class="form-label">Yarn Type</label>
-                        <input type="text" name="yarn_type" class="form-control" placeholder="e.g. COMBED COTTON" value="<?php echo htmlspecialchars($yarn_type); ?>">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Yarn Count</label>
-                        <input type="text" name="yarn_count" class="form-control" placeholder="e.g. 30/1" value="<?php echo htmlspecialchars($yarn_count); ?>">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Lot No</label>
-                        <input type="text" name="lot_no" class="form-control" placeholder="Lot Number" value="<?php echo htmlspecialchars($lot_no); ?>">
-                    </div>
-
-                    <div class="col-md-4">
-                        <label class="form-label">Fabric Type</label>
-                        <input type="text" name="fabrics_type" class="form-control" placeholder="e.g. SINGLE JERSEY" value="<?php echo htmlspecialchars($fabrics_type); ?>">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">SL / VDQ Ratio</label>
-                        <input type="number" step="0.01" min="0" name="sl_vdq" class="form-control" placeholder="e.g. 2.75" value="<?php echo htmlspecialchars($sl_vdq); ?>">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Colour</label>
-                        <input type="text" name="colour" class="form-control" placeholder="Colour Name" value="<?php echo htmlspecialchars($colour); ?>">
-                    </div>
-
-                    <div class="col-12">
-                        <label class="form-label">Remarks</label>
-                        <input type="text" name="remarks" class="form-control" placeholder="Additional notes or comments..." value="<?php echo htmlspecialchars($remarks); ?>">
-                    </div>
-                </div>
-
-                <!-- SECTION 4: Quantities & Shift Targets -->
-                <div class="form-section-title">
-                    <i class="fa-solid fa-weight-hanging"></i> 4. Quantities & Shift Targets
-                </div>
-                <div class="row gx-4 mb-2">
-                    <div class="col-md-3">
-                        <label class="form-label">Required Qty (KG) <span class="text-danger">*</span></label>
-                        <input type="number" step="0.001" min="0" name="req_qty" id="input_req_qty" class="form-control fw-bold text-success" placeholder="0.000" value="<?php echo htmlspecialchars($req_qty); ?>" required>
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Previous Knit (KG)</label>
-                        <input type="number" step="0.001" min="0" name="previous_knit" id="input_prev_knit" class="form-control" placeholder="0.000" value="<?php echo htmlspecialchars($previous_knit); ?>">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Shift A Target (Pcs)</label>
-                        <input type="number" min="0" name="a_shift" id="input_a_shift" class="form-control" placeholder="0" value="<?php echo htmlspecialchars($a_shift); ?>">
-                    </div>
-                    <div class="col-md-3">
-                        <label class="form-label">Shift B Target (Pcs)</label>
-                        <input type="number" min="0" name="b_shift" id="input_b_shift" class="form-control" placeholder="0" value="<?php echo htmlspecialchars($b_shift); ?>">
-                    </div>
-
-                    <div class="col-md-4">
-                        <label class="form-label">Shift C Target (Pcs)</label>
-                        <input type="number" min="0" name="c_shift" id="input_c_shift" class="form-control" placeholder="0" value="<?php echo htmlspecialchars($c_shift); ?>">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Total Target (Auto-Calculated)</label>
-                        <input type="number" name="total" id="input_total" class="form-control" readonly value="<?php echo htmlspecialchars($total); ?>">
-                    </div>
-                    <div class="col-md-4">
-                        <label class="form-label">Balance (Auto-Calculated)</label>
-                        <input type="number" step="0.001" name="balance" id="input_balance" class="form-control read-only-highlight" readonly value="<?php echo htmlspecialchars($balance); ?>">
+                        <label class="form-label">MAIN_TID / SUB_TID (Auto-Generated)</label>
+                        <input type="text" class="form-control bg-light" value="<?php echo htmlspecialchars(($main_tid ? $main_tid . ' / ' . $sub_tid : 'Auto-generated on save')); ?>" readonly>
                     </div>
                 </div>
 
@@ -557,39 +460,54 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         </div>
     </div>
 
-    <!-- Live JS Calculation for Total & Balance -->
+    <script src="jquery.min.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            var reqQtyInput = document.getElementById('input_req_qty');
-            var prevKnitInput = document.getElementById('input_prev_knit');
-            var aShiftInput = document.getElementById('input_a_shift');
-            var bShiftInput = document.getElementById('input_b_shift');
-            var cShiftInput = document.getElementById('input_c_shift');
-            var totalInput = document.getElementById('input_total');
-            var balanceInput = document.getElementById('input_balance');
-
-            function recalculate() {
-                var reqQty = parseFloat(reqQtyInput.value) || 0;
-                var prevKnit = parseFloat(prevKnitInput.value) || 0;
-                var aShift = parseInt(aShiftInput.value) || 0;
-                var bShift = parseInt(bShiftInput.value) || 0;
-                var cShift = parseInt(cShiftInput.value) || 0;
-
-                var total = aShift + bShift + cShift;
-                var balance = reqQty - prevKnit - total;
-                if (balance < 0) balance = 0;
-
-                totalInput.value = total;
-                balanceInput.value = balance.toFixed(3);
-            }
-
-            [reqQtyInput, prevKnitInput, aShiftInput, bShiftInput, cShiftInput].forEach(function(el) {
-                if (el) {
-                    el.addEventListener('input', recalculate);
+        $(document).ready(function() {
+            $('#fetchBookingBtn').click(function() {
+                var booking = $('#bookingInput').val().trim();
+                if (!booking) {
+                    alert('Please enter a BOOKING number first.');
+                    return;
                 }
-            });
+                
+                $.ajax({
+                    url: 'ajaxKnittingProgram.php',
+                    data: { booking: booking },
+                    dataType: 'json',
+                    success: function(resp) {
+                        if (resp && resp.success && resp.data) {
+                            var d = resp.data;
+                            $('#sonoInput').val(d.SONO || '');
+                            $('#styleInput').val(d.STYLE || '');
+                            $('#buyerInput').val(d.BUYER || '');
+                            $('#supplierInput').val(d.SUPPLIER || '');
+                            $('#yarnTypeInput').val(d.YARN_TYPE || '');
+                            $('#yarnCountInput').val(d.YARN_COUNT || '');
+                            $('#fabricsTypeInput').val(d.FABRICS_TYPE || '');
+                            $('#finishGsmInput').val(d.FINISH_GSM || '');
+                            $('#finishDiaInput').val(d.FINISH_DIA || '');
+                            $('#openTubeSelect').val(d.OPEN_TUBE || 'O');
+                            $('#lotNoInput').val(d.LOT_NO || '');
+                            $('#knitMaterialCodeInput').val(d.KNIT_MATERIAL_CODE || '');
 
-            recalculate();
+                            var descSelect = $('#descSelect');
+                            descSelect.empty();
+                            if (resp.descriptions && resp.descriptions.length > 0) {
+                                resp.descriptions.forEach(function(desc) {
+                                    descSelect.append(new Option(desc, desc));
+                                });
+                            } else if (d.KNIT_M_DESCRIPTION) {
+                                descSelect.append(new Option(d.KNIT_M_DESCRIPTION, d.KNIT_M_DESCRIPTION));
+                            }
+                        } else {
+                            alert(resp.error || 'No data found for this BOOKING.');
+                        }
+                    },
+                    error: function() {
+                        alert('Error communicating with the server.');
+                    }
+                });
+            });
         });
     </script>
 </body>
