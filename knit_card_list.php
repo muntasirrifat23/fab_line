@@ -44,11 +44,15 @@ if ($end_date !== '') {
 $query .= " ORDER BY id DESC";
 
 $stmt = $db->prepare($query);
-if (!empty($params)) {
-    $stmt->bind_param($types, ...$params);
+if ($stmt) {
+    if (!empty($params)) {
+        $stmt->bind_param($types, ...$params);
+    }
+    $stmt->execute();
+    $result = $stmt->get_result();
+} else {
+    $result = false;
 }
-$stmt->execute();
-$result = $stmt->get_result();
 
 // Summary stats calculation
 $total_cards = 0;
