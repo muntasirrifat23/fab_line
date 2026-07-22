@@ -99,12 +99,13 @@
                 <table class="table table-bordered table-striped table-hover table-sm">
                     <thead class="table-dark">
                         <tr>
-                            <th>KITID</th>
+                            <th>KID</th>
                             <th>BUDAT</th>
                             <th>SUPPLIER</th>
                             <th>BUYER</th>
                             <th>YARN TYPE</th>
                             <th>YARN COUNT</th>
+                            <th>MC DIA</th>
                             <th>FINISH DIA</th>
                             <th>FABRICS TYPE</th>
                             <th>BOOKING</th>
@@ -122,6 +123,7 @@
                             <th>KNIT TNA START</th>
                             <th>KNIT TNA END</th>
                             <th>LOT NO</th>
+                            <th>SL VDQ</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
@@ -148,12 +150,13 @@
 
             data.forEach(function(row) {
                 var tr = $('<tr>');
-                tr.append($('<td>').text(row.KITID || ''));
+                tr.append($('<td>').text(row.KID || ''));
                 tr.append($('<td>').text(row.BUDAT || ''));
                 tr.append($('<td>').text(row.SUPPLIER || ''));
                 tr.append($('<td>').text(row.BUYER || ''));
                 tr.append($('<td>').text(row.YARN_TYPE || ''));
                 tr.append($('<td>').text(row.YARN_COUNT || ''));
+                tr.append($('<td>').text(row.MC_DIA || ''));
                 tr.append($('<td>').text(row.FINISH_DIA || ''));
                 tr.append($('<td>').text(row.FABRICS_TYPE || ''));
                 tr.append($('<td>').text(row.BOOKING || ''));
@@ -171,6 +174,7 @@
                 tr.append($('<td>').text(row.KNIT_TNA_START || ''));
                 tr.append($('<td>').text(row.KNIT_TNA_END || ''));
                 tr.append($('<td>').text(row.LOT_NO || ''));
+                tr.append($('<td>').text(row.SL_VDQ || ''));
                 tbody.append(tr);
             });
         }
@@ -183,7 +187,7 @@
             }
             $('#searchBtn').prop('disabled', true).text('Searching...');
             $.ajax({
-                    url: 'ajaxKnittingInput.php',
+                    url: 'ajaxKnitting_input.php',
                     data: {
                         booking: booking
                     },
@@ -205,7 +209,7 @@
         function loadAll() {
             $('#tableBody').html('<tr><td colspan="25" class="text-center small-muted">Loading data...</td></tr>');
             $.ajax({
-                    url: 'ajaxKnittingInput.php',
+                    url: 'ajaxKnitting_input.php',
                     dataType: 'json',
                     method: 'GET'
                 })
