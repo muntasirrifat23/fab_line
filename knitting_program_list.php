@@ -15,36 +15,40 @@ $mc_no_filter = isset($_GET['mc_no']) ? trim($_GET['mc_no']) : '';
 $booking_no_filter = isset($_GET['booking_no']) ? trim($_GET['booking_no']) : '';
 
 // Build prepared query
-$query = "SELECT kp.*, kc.id AS card_id FROM knitting_program kp LEFT JOIN knit_card kc ON kp.id = kc.program_id WHERE 1=1";
+$query = "SELECT kp.*, kp.KPTID AS id, kp.KPTID AS KPTID, kp.MCNO AS mc_no, kp.BOOKING AS booking_no, kp.BUYER AS buyer, kp.QTY AS req_qty, kp.STYLE AS style_no, kp.SONO AS so_no, kc.id AS card_id FROM knitting_program kp LEFT JOIN knit_card kc ON kp.KPTID = kc.program_id WHERE 1=1";
 $params = array();
 $types = "";
 
 if ($buyer_filter !== '') {
-    $query .= " AND kp.buyer LIKE ?";
+    $query .= " AND kp.BUYER LIKE ?";
     $params[] = "%" . $buyer_filter . "%";
     $types .= "s";
 }
 
 if ($mc_no_filter !== '') {
-    $query .= " AND kp.mc_no LIKE ?";
+    $query .= " AND kp.MCNO LIKE ?";
     $params[] = "%" . $mc_no_filter . "%";
     $types .= "s";
 }
 
 if ($booking_no_filter !== '') {
-    $query .= " AND kp.booking_no LIKE ?";
+    $query .= " AND kp.BOOKING LIKE ?";
     $params[] = "%" . $booking_no_filter . "%";
     $types .= "s";
 }
 
-$query .= " ORDER BY kp.id DESC";
+$query .= " ORDER BY kp.KPTID DESC";
 
 $stmt = $db->prepare($query);
-if (!empty($params)) {
-    $stmt->bind_param($types, ...$params);
+if ($stmt) {
+    if (!empty($params)) {
+        $stmt->bind_param($types, ...$params);
+    }
+    $stmt->execute();
+    $result = $stmt->get_result();
+} else {
+    $result = false;
 }
-$stmt->execute();
-$result = $stmt->get_result();
 
 // Summary stats calculation
 $total_programs = 0;
