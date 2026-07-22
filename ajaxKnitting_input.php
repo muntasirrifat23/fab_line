@@ -14,7 +14,7 @@ if ($booking !== '') {
 $where = '';
 if (count($conditions) > 0) $where = 'WHERE ' . implode(' AND ', $conditions);
 
-$query = "SELECT * FROM knitting_program $where ORDER BY KID DESC";
+$query = "SELECT *, KPID AS KID FROM knitting_input $where ORDER BY KPID DESC";
 $result = mysqli_query($db, $query);
 
 if (!$result) {
