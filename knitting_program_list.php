@@ -69,8 +69,7 @@ if ($result && $result->num_rows > 0) {
         }
     }
 }
-?>
-<!DOCTYPE html>
+?><!DOCTYPE html>
 <html lang="en">
 
 <head>
