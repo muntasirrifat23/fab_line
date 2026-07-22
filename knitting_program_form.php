@@ -418,9 +418,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                         <i class="fa-solid <?php echo $is_edit ? 'fa-pen-to-square' : 'fa-plus-circle'; ?>"></i>
                         <?php echo $is_edit ? 'Edit Program Entry #' . $edit_id : 'New Knitting Program Entry'; ?>
                     </h1>
-                    <span class="badge-mode">
-                        <i class="fa-solid fa-database me-1"></i> Rifat DB Standard
-                    </span>
                 </div>
                 <p class="mb-0 text-white-50 small">Fill parameters, lookup booking information, and allocate machine production details</p>
             </div>
