@@ -536,27 +536,27 @@ mysqli_close($db);
 
             if (urTYP === "qms01") {
                 $("#idBTS, #idBTF, #idBTP, #idChange, #idAdjust, #idExcel, #uploadCSV, #ztarget").hide();
-                idFLR.style.display = "none";
+                if (idFLR) idFLR.style.display = "none";
             }
 
             if (!isNaN(urTYP) && Number(urTYP) >= 1 && Number(urTYP) <= 52) {
                 $("#idBTF, #idBTP, #idChange, #idAdjust, #idExcel, #uploadCSV, #user_management").hide();
-                idFLR.style.display = "none";
+                if (idFLR) idFLR.style.display = "none";
             }
 
             if (!isNaN(urTYP) && Number(urTYP) >= 101 && Number(urTYP) <= 999) {
                 $("#idBTS, #idBTP, #idChange, #idAdjust, #idExcel, #uploadCSV").hide();
-                idFLR.style.display = "none";
+                if (idFLR) idFLR.style.display = "none";
             }
 
             if ((!isNaN(urTYP) && Number(urTYP) >= 1001) || urTYP === "f1" || urTYP === "f2" || urTYP === "f3" || urTYP === "f4") {
                 $("#idBTS, #idBTF, #idChange, #idAdjust, #idExcel, #uploadCSV").hide();
-                idLNE.style.display = "none";
+                if (idLNE) idLNE.style.display = "none";
             }
 
             if (urTYP === "ppq29" || urTYP === "ppl04" || urTYP === "ppq28") {
                 $("#idBTF, #idBTS, #idBTP, #idChange, #idAdjust, #idExcel, #uploadCSV").hide();
-                idFLR.style.display = "none";
+                if (idFLR) idFLR.style.display = "none";
             }
 
             if (urTYP === "ppq71") {
