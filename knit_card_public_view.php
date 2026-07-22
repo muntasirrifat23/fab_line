@@ -11,10 +11,14 @@ if ($card_id <= 0) {
 }
 
 // Fetch Knit Card Header Data
-$stmt = $db->prepare("SELECT kc.*, kp.booking_no FROM knit_card kc LEFT JOIN knitting_program kp ON kc.program_id = kp.id WHERE kc.id = ?");
-$stmt->bind_param("i", $card_id);
-$stmt->execute();
-$card_res = $stmt->get_result();
+$stmt = $db->prepare("SELECT kc.*, COALESCE(kp.BOOKING, kp.booking_no) AS booking_no FROM knit_card kc LEFT JOIN knitting_program kp ON (kc.program_id = kp.KPTID OR kc.program_id = kp.id) WHERE kc.id = ?");
+if ($stmt) {
+    $stmt->bind_param("i", $card_id);
+    $stmt->execute();
+    $card_res = $stmt->get_result();
+} else {
+    $card_res = false;
+}
 
 if (!$card_res || $card_res->num_rows == 0) {
     echo "<!DOCTYPE html><html><head><title>Card Not Found</title><link rel='stylesheet' href='css/bootstrap.min.css'></head><body class='p-4 text-center'><h3>Knit Card Not Found</h3><p>The requested Knit Card #{$card_id} does not exist in the database.</p></body></html>";
@@ -25,9 +29,13 @@ $card = $card_res->fetch_assoc();
 
 // Fetch Daily Production Logs
 $prod_stmt = $db->prepare("SELECT * FROM knit_card_production WHERE card_id = ? ORDER BY log_date ASC, id ASC");
-$prod_stmt->bind_param("i", $card_id);
-$prod_stmt->execute();
-$prod_result = $prod_stmt->get_result();
+if ($prod_stmt) {
+    $prod_stmt->bind_param("i", $card_id);
+    $prod_stmt->execute();
+    $prod_result = $prod_stmt->get_result();
+} else {
+    $prod_result = false;
+}
 
 $logs_array = array();
 if ($prod_result && $prod_result->num_rows > 0) {

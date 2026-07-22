@@ -19,9 +19,13 @@ $qr_url = APP_BASE_URL . "/knit_card_public_view.php?id=" . $card_id;
 
 // Fetch Card Header
 $stmt = $db->prepare("SELECT * FROM knit_card WHERE id = ?");
-$stmt->bind_param("i", $card_id);
-$stmt->execute();
-$res = $stmt->get_result();
+if ($stmt) {
+    $stmt->bind_param("i", $card_id);
+    $stmt->execute();
+    $res = $stmt->get_result();
+} else {
+    $res = false;
+}
 
 if (!$res || $res->num_rows == 0) {
     echo "Knit Card not found";
@@ -32,9 +36,13 @@ $card = $res->fetch_assoc();
 
 // Fetch Production Log Entries
 $prod_stmt = $db->prepare("SELECT * FROM knit_card_production WHERE card_id = ? ORDER BY log_date ASC, id ASC");
-$prod_stmt->bind_param("i", $card_id);
-$prod_stmt->execute();
-$prod_res = $prod_stmt->get_result();
+if ($prod_stmt) {
+    $prod_stmt->bind_param("i", $card_id);
+    $prod_stmt->execute();
+    $prod_res = $prod_stmt->get_result();
+} else {
+    $prod_res = false;
+}
 ?>
 <!DOCTYPE html>
 <html lang="en">
